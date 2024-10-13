@@ -1,44 +1,42 @@
 package com.kvstore.storage;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.io.*;
+import com.kvstore.raft.LogEntry;
 
 public class KVStorage {
-    private ConcurrentHashMap<String, String> store;
-    private String persistentStorePath;
+    private final ConcurrentHashMap<String, String> store;
+    private final PersistentStorage persistentStorage;
 
-    public KVStorage(String persistentStorePath) {
-        this.persistentStorePath = persistentStorePath;
+    public KVStorage(String dataDir) {
         this.store = new ConcurrentHashMap<>();
-        loadFromDisk();
+        this.persistentStorage = new PersistentStorage(dataDir);
+        recoverFromLog();
     }
 
     public String get(String key) {
         return store.get(key);
     }
 
-    public boolean put(String key, String value) {
+    public void put(String key, String value, long term) {
+        LogEntry entry = new LogEntry(term, key, value);
+        persistentStorage.appendLogEntry(entry);
         store.put(key, value);
-        return persistToDisk();
     }
 
-    private boolean persistToDisk() {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(persistentStorePath))) {
-            oos.writeObject(store);
-            return true;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
+    public long getLastLogIndex() {
+        return persistentStorage.getLastLogIndex();
     }
 
-    private void loadFromDisk() {
-        File file = new File(persistentStorePath);
-        if (file.exists()) {
-            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
-                store = (ConcurrentHashMap<String, String>) ois.readObject();
-            } catch (IOException | ClassNotFoundException e) {
-                e.printStackTrace();
+    public long getLastLogTerm() {
+        return persistentStorage.getLastLogTerm();
+    }
+
+    private void recoverFromLog() {
+        long lastIndex = persistentStorage.getLastLogIndex();
+        for (long i = 1; i <= lastIndex; i++) {
+            LogEntry entry = persistentStorage.getLogEntry(i);
+            if (entry != null) {
+                store.put(entry.getKey(), entry.getValue());
             }
         }
     }

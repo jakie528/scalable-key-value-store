@@ -6,7 +6,7 @@ public class RaftState {
     }
 
     private Role currentRole;
-    private int currentTerm;
+    private long currentTerm;
     private String votedFor;
 
     public RaftState() {
@@ -19,7 +19,7 @@ public class RaftState {
         return currentRole;
     }
 
-    public int getCurrentTerm() {
+    public long getCurrentTerm() {
         return currentTerm;
     }
 
@@ -27,7 +27,7 @@ public class RaftState {
         return currentRole == Role.LEADER;
     }
 
-    public void becomeFollower(int term) {
+    public void becomeFollower(long term) {
         currentRole = Role.FOLLOWER;
         currentTerm = term;
         votedFor = null;
@@ -42,6 +42,7 @@ public class RaftState {
     public void becomeLeader() {
         currentRole = Role.LEADER;
     }
+
 
     // Add getters and setters as needed
 }

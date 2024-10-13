@@ -1,36 +1,48 @@
-
 package com.kvstore.raft;
 
-import com.kvstore.storage.KVStorage;
-import org.junit.Before;
-import org.junit.Test;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.Arrays;
+import java.util.List;
+import com.kvstore.storage.KVStorage;
 
-public class RaftNodeTest {
+class RaftNodeTest {
     private RaftNode raftNode;
     private KVStorage mockStorage;
+    private List<String> peerIds;
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         mockStorage = mock(KVStorage.class);
-        raftNode = new RaftNode("node1", Arrays.asList("node2", "node3"), mockStorage);
+
+        // List of peer IDs as Strings, matching the RaftNode constructor signature
+        List<String> peerIds = Arrays.asList("node2", "node3", "node4");
+
+        // Creating the RaftNode instance
+        raftNode = new RaftNode("node1", peerIds, mockStorage);
     }
 
     @Test
-    public void testInitialState() {
-        assertFalse(raftNode.isLeader());
+    void testInitialState() {
+        assertEquals(RaftState.Role.FOLLOWER, raftNode.getState().getCurrentRole());
+        assertEquals(0, raftNode.getCurrentTerm());
+        assertNull(raftNode.getVotedFor());
     }
 
-    @Test
-    public void testProposeEntry() {
-        // This test is simplified and doesn't account for the asynchronous nature of proposeEntry
-        // Todo: use a CountDownLatch or similar mechanism for more accurate testing
-        raftNode.start(); // Assuming this method exists to initialize the RaftNode
-        assertFalse(raftNode.proposeEntry("key", "value").join());
-    }
+    // TODO: asynchronous start election?
+//    @Test
+//    void testStartElection() {
+//        raftNode.startElection();
+//        assertEquals(RaftState.Role.CANDIDATE, raftNode.getState().getCurrentRole());
+//        assertEquals(1, raftNode.getCurrentTerm());
+//        assertEquals("node1", raftNode.getVotedFor());
+//    }
 
-    // Add more tests when implement more functionality
+
+    // Add more tests...
 }

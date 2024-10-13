@@ -5,6 +5,7 @@ import io.grpc.ServerBuilder;
 import com.kvstore.raft.RaftNode;
 import com.kvstore.storage.KVStorage;
 import com.kvstore.config.ServerConfig;
+import com.kvstore.storage.KVStorage;
 
 import java.io.IOException;
 
