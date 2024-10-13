@@ -21,7 +21,7 @@ public class RaftNode {
     private List<LogEntry> log;
     private long commitIndex;
     private long lastApplied;
-    private long currentTerm;
+//    private long currentTerm;
     private String votedFor;
     private ScheduledFuture<?> electionTimer;
 
@@ -107,9 +107,18 @@ public class RaftNode {
           }
       }
   }
+
     public long getCurrentTerm() {
-        return this.state.getCurrentTerm();
+        return state.getCurrentTerm();
     }
+
+    private void setCurrentTerm(long term) {
+        state.setCurrentTerm(term);
+    }
+
+//    public long getCurrentTerm() {
+//        return this.state.getCurrentTerm();
+//    }
 
     public String getVotedFor() {
         return this.votedFor;
@@ -126,7 +135,7 @@ public class RaftNode {
         long prevLogIndex = nextIdx - 1;
         long prevLogTerm = prevLogIndex >= 0 && prevLogIndex < log.size() ? log.get((int) prevLogIndex).getTerm() : 0;
 
-        boolean success = appendEntries(follower.getId(), currentTerm, prevLogIndex, prevLogTerm, entries, commitIndex);
+        boolean success = appendEntries(follower.getId(), state.getCurrentTerm(), prevLogIndex, prevLogTerm, entries, commitIndex);
 
         if (success) {
             nextIndex.put(follower.getId(), (long) log.size());
@@ -141,12 +150,12 @@ public class RaftNode {
                                  List<LogEntry> entries, long leaderCommit) {
         rwLock.writeLock().lock();
         try {
-            if (term < currentTerm) {
+            if (term < state.getCurrentTerm()) {
                 return false;
             }
 
-            if (term > currentTerm) {
-                currentTerm = term;
+            if (term > state.getCurrentTerm()) {
+                state.setCurrentTerm(term);
                 state.becomeFollower(term);
                 votedFor = null;
             }
@@ -196,7 +205,7 @@ public class RaftNode {
 
     private void updateCommitIndex() {
         for (long n = commitIndex + 1; n < log.size(); n++) {
-            if (log.get((int) n).getTerm() == currentTerm) {
+            if (log.get((int) n).getTerm() == state.getCurrentTerm()) {
                 int replicationCount = 1; // Count self
                 for (long matchIdx : matchIndex.values()) {
                     if (matchIdx >= n) {
@@ -229,7 +238,7 @@ public class RaftNode {
             return CompletableFuture.completedFuture(false);
         }
 
-        LogEntry entry = new LogEntry(currentTerm, key, value);
+        LogEntry entry = new LogEntry(state.getCurrentTerm(), key, value);
         log.add(entry);
         return replicateEntry(log.size() - 1);
     }

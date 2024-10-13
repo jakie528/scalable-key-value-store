@@ -43,6 +43,10 @@ public class RaftState {
         currentRole = Role.LEADER;
     }
 
+    public void setCurrentTerm(long term) {
+        this.currentTerm = term;
+    }
+
 
     // Add getters and setters as needed
 }

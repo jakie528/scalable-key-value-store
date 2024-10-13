@@ -31,7 +31,7 @@ public class KVStorage {
         return persistentStorage.getLastLogTerm();
     }
 
-    private void recoverFromLog() {
+    void recoverFromLog() {
         long lastIndex = persistentStorage.getLastLogIndex();
         for (long i = 1; i <= lastIndex; i++) {
             LogEntry entry = persistentStorage.getLogEntry(i);
@@ -40,4 +40,6 @@ public class KVStorage {
             }
         }
     }
+
+//    protected abstract PersistentStorage createPersistentStorage(String dataDir);
 }
