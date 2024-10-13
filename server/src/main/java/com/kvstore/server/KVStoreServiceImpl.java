@@ -3,8 +3,9 @@ package com.kvstore.server;
 import com.kvstore.grpc.*;
 import com.kvstore.raft.RaftNode;
 import com.kvstore.storage.KVStorage;
-import com.kvstore.grpc.KVStoreServiceGrpc;
 import io.grpc.stub.StreamObserver;
+
+import java.util.concurrent.CompletableFuture;
 
 public class KVStoreServiceImpl extends KVStoreServiceGrpc.KVStoreServiceImplBase {
     private final KVStorage storage;
@@ -29,22 +30,16 @@ public class KVStoreServiceImpl extends KVStoreServiceGrpc.KVStoreServiceImplBas
 
     @Override
     public void put(PutRequest request, StreamObserver<PutResponse> responseObserver) {
-        if (raftNode.isLeader()) {
-            String key = request.getKey();
-            String value = request.getValue();
-            boolean success = storage.put(key, value);
+        String key = request.getKey();
+        String value = request.getValue();
+
+        CompletableFuture<Boolean> future = raftNode.proposeEntry(key, value);
+        future.thenAccept(success -> {
             PutResponse response = PutResponse.newBuilder()
                     .setSuccess(success)
                     .build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-        } else {
-            // Forward to leader or return an error
-            PutResponse response = PutResponse.newBuilder()
-                    .setSuccess(false)
-                    .build();
-            responseObserver.onNext(response);
-            responseObserver.onCompleted();
-        }
+        });
     }
 }

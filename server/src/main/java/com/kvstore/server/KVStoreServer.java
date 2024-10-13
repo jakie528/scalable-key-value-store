@@ -4,17 +4,20 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import com.kvstore.raft.RaftNode;
 import com.kvstore.storage.KVStorage;
+import com.kvstore.config.ServerConfig;
+import com.kvstore.storage.KVStorage;
 
 import java.io.IOException;
 
 public class KVStoreServer {
     private final int port;
     private final Server server;
+    private final RaftNode raftNode;
 
-    public KVStoreServer(int port) {
-        this.port = port;
-        KVStorage storage = new KVStorage();
-        RaftNode raftNode = new RaftNode(); // Initialize with appropriate parameters
+    public KVStoreServer(ServerConfig config) throws IOException {
+        this.port = Integer.parseInt(config.getNodeId().split(":")[1]);
+        KVStorage storage = new KVStorage(config.getStoragePath());
+        this.raftNode = new RaftNode(config.getNodeId(), config.getPeers(), storage);
         KVStoreServiceImpl service = new KVStoreServiceImpl(storage, raftNode);
         this.server = ServerBuilder.forPort(port)
                 .addService(service)
@@ -23,6 +26,7 @@ public class KVStoreServer {
 
     public void start() throws IOException {
         server.start();
+        raftNode.start();
         System.out.println("Server started, listening on " + port);
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
@@ -47,8 +51,12 @@ public class KVStoreServer {
     }
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        int port = 8080; // Configure port as needed
-        final KVStoreServer server = new KVStoreServer(port);
+        if (args.length != 1) {
+            System.err.println("Usage: KVStoreServer <config-file>");
+            System.exit(1);
+        }
+        ServerConfig config = new ServerConfig(args[0]);
+        final KVStoreServer server = new KVStoreServer(config);
         server.start();
         server.blockUntilShutdown();
     }
