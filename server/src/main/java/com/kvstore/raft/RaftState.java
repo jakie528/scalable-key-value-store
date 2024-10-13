@@ -36,7 +36,7 @@ public class RaftState {
     public void becomeCandidate() {
         currentRole = Role.CANDIDATE;
         currentTerm++;
-        votedFor = null;
+//        votedFor = null;
     }
 
     public void becomeLeader() {
