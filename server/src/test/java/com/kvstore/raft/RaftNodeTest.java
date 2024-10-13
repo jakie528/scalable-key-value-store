@@ -42,6 +42,20 @@ class RaftNodeTest {
 //        assertEquals(1, raftNode.getCurrentTerm());
 //        assertEquals("node1", raftNode.getVotedFor());
 //    }
+    @Test
+    void testAsyncStartElection() throws Exception {
+        CompletableFuture<Void> electionFuture = CompletableFuture.runAsync(() -> raftNode.startElection());
+
+        // Wait for the election to complete (with a timeout)
+        electionFuture.get(5, TimeUnit.SECONDS);
+
+        // Now check the results
+        RaftState.Role currentRole = raftNode.getState().getCurrentRole();
+        assertTrue(currentRole == RaftState.Role.CANDIDATE || currentRole == RaftState.Role.LEADER,
+                "Role should be either CANDIDATE or LEADER after starting election");
+        assertEquals(1, raftNode.getCurrentTerm(), "Term should be incremented to 1 after starting election");
+        assertEquals("node1", raftNode.getVotedFor(), "Node should vote for itself");
+    }
 
 
     // Add more tests...

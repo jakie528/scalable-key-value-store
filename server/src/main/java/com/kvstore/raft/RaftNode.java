@@ -38,26 +38,9 @@ public class RaftNode {
         this.log = new ArrayList<>();
         this.commitIndex = 0;
         this.lastApplied = 0;
-        this.currentTerm = 0;
+//        this.currentTerm = 0;
         this.votedFor = null;
     }
-//public RaftNode(String nodeId, List<NodeInfo> peers, KVStorage storage) {
-//    this.nodeId = nodeId;
-//    this.peers = new ConcurrentHashMap<>();
-//    peers.forEach(peer -> this.peers.put(peer.getId(), peer));
-//    this.storage = storage;
-//    this.state = new RaftState();
-//    this.scheduler = Executors.newScheduledThreadPool(2);
-//    this.workerPool = Executors.newWorkStealingPool();
-//    this.nextIndex = new ConcurrentHashMap<>();
-//    this.matchIndex = new ConcurrentHashMap<>();
-//    this.log = new ArrayList<>();
-//    this.commitIndex = 0;
-//    this.lastApplied = 0;
-//    this.currentTerm = 0;
-//    this.votedFor = null;
-//}
-
 
     public void start() {
         scheduler.scheduleAtFixedRate(this::leaderElectionTask, 0, 150, TimeUnit.MILLISECONDS);
@@ -71,26 +54,34 @@ public class RaftNode {
     }
 
     public void startElection() {
-        state.becomeCandidate();
+        state.becomeCandidate();  // increment the term
+        votedFor = nodeId; // Vote for itself
+
         long lastLogIndex = storage.getLastLogIndex();
         long lastLogTerm = storage.getLastLogTerm();
 
+        //candidate requests votes from other nodes
         CompletableFuture<Boolean>[] voteFutures = peers.values().stream()
                 .map(peer -> CompletableFuture.supplyAsync(() -> requestVote(peer, lastLogIndex, lastLogTerm), workerPool))
                 .toArray(CompletableFuture[]::new);
 
         CompletableFuture.allOf(voteFutures).thenAccept(v -> {
+//            long voteCount = Arrays.stream(voteFutures)
+//                    .map(future -> {
+//                        try {
+//                            return (Boolean) future.get();
+//                        } catch (Exception e) {
+//                            return false;
+//                        }
+//                    })
+//                    .filter(Boolean::valueOf)
+//                    .count();
             long voteCount = Arrays.stream(voteFutures)
-                    .map(future -> {
-                        try {
-                            return (Boolean) future.get();
-                        } catch (Exception e) {
-                            return false;
-                        }
-                    })
-                    .filter(Boolean::valueOf)
-                    .count();
+                    .map(CompletableFuture::join)
+                    .filter(Boolean::booleanValue)
+                    .count() + 1; // Add 1 for self-vote
 
+            //If it receives votes from the majority, it becomes the leader.
             if (voteCount > peers.size() / 2) {
                 becomeLeader();
             }
@@ -117,7 +108,7 @@ public class RaftNode {
       }
   }
     public long getCurrentTerm() {
-        return this.currentTerm;
+        return this.state.getCurrentTerm();
     }
 
     public String getVotedFor() {
