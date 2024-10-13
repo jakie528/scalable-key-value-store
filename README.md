@@ -16,3 +16,7 @@ Run the following Maven commands:
 Note: Check if the gRPC classes are generated. They should be in `target/generated-sources/protobuf/java` and `target/generated-sources/protobuf/grpc-java`
 
 This should generate the necessary gRPC classes and compile the project successfully.
+### Unit Test 
+
+Run the test command `mvn test` under the server directory.
+
