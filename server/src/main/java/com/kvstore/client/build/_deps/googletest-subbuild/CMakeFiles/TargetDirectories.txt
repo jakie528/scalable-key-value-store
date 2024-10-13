@@ -1,0 +1,3 @@
+/Users/Patron/Desktop/Fall'24/distributed systems/Projects/CS739-P2/scalable-key-value-store/server/src/main/java/com/kvstore/client/build/_deps/googletest-subbuild/CMakeFiles/googletest-populate.dir
+/Users/Patron/Desktop/Fall'24/distributed systems/Projects/CS739-P2/scalable-key-value-store/server/src/main/java/com/kvstore/client/build/_deps/googletest-subbuild/CMakeFiles/edit_cache.dir
+/Users/Patron/Desktop/Fall'24/distributed systems/Projects/CS739-P2/scalable-key-value-store/server/src/main/java/com/kvstore/client/build/_deps/googletest-subbuild/CMakeFiles/rebuild_cache.dir

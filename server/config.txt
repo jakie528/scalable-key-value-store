@@ -1,0 +1,3 @@
+node.id=127.0.0.1:50051
+peers=127.0.0.1:50052,127.0.0.1:50053
+storage.path=server/src/main/java/com/kvstore/storage
