@@ -1,2 +1,0 @@
-/Library/Developer/CommandLineTools/usr/bin/ar qc libkvstore_grpc_proto.a CMakeFiles/kvstore_grpc_proto.dir/kv_store.pb.cc.o CMakeFiles/kvstore_grpc_proto.dir/kv_store.grpc.pb.cc.o
-/Library/Developer/CommandLineTools/usr/bin/ranlib libkvstore_grpc_proto.a
