@@ -19,6 +19,7 @@ This should generate the necessary gRPC classes and compile the project successf
 ### Unit Test 
 
 Run the test command `mvn test` under the server directory.
-![image](https://github.com/user-attachments/assets/80e37143-2f1a-49ca-a4e9-77e3a07c0f2b)
+![image](https://github.com/user-attachments/assets/0af7c83c-1cd6-4f2c-8174-472ca25b69b4)
+
 
 
