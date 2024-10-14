@@ -3,9 +3,8 @@ package com.kvstore.server;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import com.kvstore.raft.RaftNode;
-import com.kvstore.storage.KVStorage;
+import com.kvstore.storage.SQLiteStorage;
 import com.kvstore.config.ServerConfig;
-import com.kvstore.storage.KVStorage;
 
 import java.io.IOException;
 
@@ -13,10 +12,11 @@ public class KVStoreServer {
     private final int port;
     private final Server server;
     private final RaftNode raftNode;
+    private final SQLiteStorage storage;
 
     public KVStoreServer(ServerConfig config) throws IOException {
         this.port = Integer.parseInt(config.getNodeId().split(":")[1]);
-        KVStorage storage = new KVStorage(config.getStoragePath());
+        this.storage = new SQLiteStorage(config.getStoragePath());
         this.raftNode = new RaftNode(config.getNodeId(), config.getPeers(), storage);
         KVStoreServiceImpl service = new KVStoreServiceImpl(storage, raftNode);
         this.server = ServerBuilder.forPort(port)
@@ -41,6 +41,9 @@ public class KVStoreServer {
     public void stop() {
         if (server != null) {
             server.shutdown();
+        }
+        if (storage != null) {
+            storage.close();
         }
     }
 
