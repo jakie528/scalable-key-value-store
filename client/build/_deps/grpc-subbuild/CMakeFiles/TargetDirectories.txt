@@ -1,3 +1,0 @@
-/Users/Patron/Desktop/Fall'24/distributed systems/Projects/CS739-P2/scalable-key-value-store/server/src/main/java/com/kvstore/client/build/_deps/grpc-subbuild/CMakeFiles/grpc-populate.dir
-/Users/Patron/Desktop/Fall'24/distributed systems/Projects/CS739-P2/scalable-key-value-store/server/src/main/java/com/kvstore/client/build/_deps/grpc-subbuild/CMakeFiles/edit_cache.dir
-/Users/Patron/Desktop/Fall'24/distributed systems/Projects/CS739-P2/scalable-key-value-store/server/src/main/java/com/kvstore/client/build/_deps/grpc-subbuild/CMakeFiles/rebuild_cache.dir

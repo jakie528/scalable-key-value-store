@@ -1,118 +1,102 @@
-#include "kvclient.hpp"
-#include "kvclientimpl.h"
-#include <iostream>
-#include <stdexcept>
+#include "include/KVClient.h"
 #include <memory>
+#include <fstream>
+#include <sstream>
 #include <vector>
 
-std::shared_ptr<KvstoreRPCClient> kv_client = nullptr;
-std::vector<std::string> server_list;
-std::string current_leader;
-std::vector<std::string> read_server_list(const std::string& config_file);
+std::shared_ptr<KVClient> kv_client = nullptr;
+
+std::vector<std::string> parseConfigFile(const char *config_file) {
+  std::vector<std::string> server_list;
+  std::ifstream infile(config_file);
+  std::string line;
+  while (std::getline(infile, line)) {
+    server_list.push_back(line);
+  }
+  return server_list;
+}
 
 int kv739_init(char *config_file) {
-    server_list = read_server_list(config_file);
-    for (const std::string& server : server_list) {
-        try {
-            kv_client = std::make_shared<KvstoreRPCClient>(server);
-            if (kv_client->IsLeader()) {  
-                current_leader = server;
-                return 0;  
-            }
-        } catch (const std::exception& e) {
-            std::cerr << "Error connecting to server: " << server << " - " << e.what() << std::endl;
-            continue;
-        }
+  try {
+    std::vector<std::string> server_list = parseConfigFile(config_file);
+    if (server_list.empty()) {
+      return -1;
     }
-    return -1;  
+    kv_client = std::make_shared<KVClient>(server_list);
+  } catch (...) {
+    return -1;
+  }
+
+  return 0;
 }
 
 int kv739_shutdown(void) {
-    try {
-        if (kv_client) {
-            kv_client->Shutdown();  
-            kv_client = nullptr;
-        }
-    } catch (const std::exception& e) {
-        std::cerr << "Error during shutdown: " << e.what() << std::endl;
-        return -1;
-    }
-    return 0;
-}
-
-int kv739_die(char *server_name, int clean) {
-    try {
-        std::string modern_server_name(server_name);
-        return kv_client->TerminateServer(modern_server_name, clean); 
-    } catch (const std::exception& e) {
-        std::cerr << "Error during server termination: " << e.what() << std::endl;
-        return -1;
-    }
+  try {
+    kv_client->Shutdown();
+    kv_client = nullptr;
+  } catch (...) {
+    return -1;
+  }
+  return 0;
 }
 
 int kv739_get(char *key, char *value) {
-    if (key == NULL || value == NULL) {
-        return -1;
-    }
+  if (key == NULL || value == NULL) {
+    return -1;
+  }
 
-    std::string modern_key(key);
-    try {
-        KvstoreRequest request;
-        KvstoreResponse response;
-        request.set_key(modern_key);
-        request.set_request_type(KvstoreRequest::GET_REQ);
-        kv_client->sendRequest(request, response, 0);  
-        if (!response.found()) {
-            return 1; 
-        }
-        uint64_t val_len = response.value().length();
-        uint64_t num_bytes = val_len > 2047 ? 2047 : val_len;
-        response.value().copy(value, num_bytes);
-        value[num_bytes] = '\0';  
-        return 0;
-    } catch (const std::exception& e) {
-        std::cerr << "GET request failed: " << e.what() << std::endl;
-        return -1;
+  std::string modern_key(key);
+  try {
+    std::string modern_val = kv_client->SendGetRequest(modern_key);
+    if (modern_val.empty()) {
+      return 1;
     }
+    uint64_t val_len = modern_val.length();
+    uint64_t num_bytes = val_len > 2047 ? 2047 : val_len;
+    modern_val.copy(value, num_bytes);
+    value[num_bytes] = '\0';
+  } catch (...) {
+    return -1;
+  }
+
+  return 0;
 }
 
 int kv739_put(char *key, char *value, char *old_value) {
-    if (key == NULL || value == NULL || old_value == NULL) {
-        return -1;
-    }
-
-    std::string modern_key(key);
-    std::string modern_value(value);
-    int retry_count = 3;
-
-    while (retry_count > 0) {
-        try {
-            KvstoreRequest request;
-            KvstoreResponse response;
-            request.set_key(modern_key);
-            request.set_value(modern_value);
-            request.set_request_type(KvstoreRequest::PUT_REQ);
-            kv_client->sendRequest(request, response, 0);  
-
-            if (!response.found()) {
-                return 1;  
-            }
-
-            uint64_t val_len = response.old_value().length();
-            uint64_t num_bytes = val_len > 2047 ? 2047 : val_len;
-            response.old_value().copy(old_value, num_bytes);
-            old_value[num_bytes] = '\0';  
-            return 0;
-
-        } catch (const LeaderRedirectException& e) {
-            std::cerr << "Redirected to new leader: " << e.new_leader_address << std::endl;
-            current_leader = e.new_leader_address;
-            kv_client = std::make_shared<KvstoreRPCClient>(current_leader);  
-            retry_count--;
-        } catch (const std::exception& e) {
-            std::cerr << "PUT request failed: " << e.what() << std::endl;
-            return -1;
-        }
-    }
+  if (key == NULL || value == NULL || old_value == NULL) {
     return -1;
+  }
+
+  std::string modern_key(key);
+  std::string modern_value(value);
+
+  try {
+    std::string modern_old_value = kv_client->SendPutRequest(modern_key, modern_value);
+    if (modern_old_value.empty()) {
+      return 1;
+    }
+    uint64_t val_len = modern_old_value.length();
+    uint64_t num_bytes = val_len > 2047 ? 2047 : val_len;
+    modern_old_value.copy(old_value, num_bytes);
+    old_value[num_bytes] = '\0';
+  } catch (...) {
+    return -1;
+  }
+
+  return 0;
+}
+
+int kv739_die(char *server_name, int clean) {
+  if (server_name == NULL) {
+    return -1;
+  }
+
+  std::string modern_server_name(server_name);
+  try {
+    kv_client->SendDieRequest(modern_server_name, clean);
+  } catch (...) {
+    return -1;
+  }
+
+  return 0;
 }
