@@ -45,6 +45,10 @@ public class RaftNode {
         }
     }
 
+    /*
+    At the beginning of each term, nodes start as followers.
+    If a follower doesn’t hear from the leader for a certain period (election timeout), it transitions to the candidate state.
+    */
     public void startElection() {
         state.becomeCandidate();
         votedFor = nodeId;
@@ -62,14 +66,11 @@ public class RaftNode {
                     .filter(Boolean::booleanValue)
                     .count() + 1; // Add 1 for self-vote
 
+            //The candidate requests votes from other nodes. If it receives votes from the majority, it becomes the leader.
             if (voteCount > peers.size() / 2) {
                 becomeLeader();
             }
         });
-    }
-
-    public RaftState getState() {
-        return this.state;
     }
 
     private void heartbeatTask() {
@@ -80,23 +81,13 @@ public class RaftNode {
         }
     }
 
-    public long getCurrentTerm() {
-        return state.getCurrentTerm();
-    }
-
-    private void setCurrentTerm(long term) {
-        state.setCurrentTerm(term);
-    }
-
-    public String getVotedFor() {
-        return this.votedFor;
-    }
-
+    //
     public boolean requestVote(NodeInfo peer, long lastLogIndex, long lastLogTerm) {
         // Implement RPC call to peer for vote request
         return false; // Placeholder
     }
 
+    //Sends the log entry to followers, which replicate the log entry
     private void sendAppendEntries(NodeInfo follower) {
         long nextIdx = nextIndex.getOrDefault(follower.getId(), 1L);
         List<LogEntry> entries = storage.getLogEntries(nextIdx, storage.getLastLogIndex());
@@ -188,6 +179,7 @@ public class RaftNode {
         storage.setLastApplied(lastApplied);
     }
 
+    // the leader commits the operation to its state machine.
     private void applyToStateMachine(LogEntry entry) {
         storage.updateKeyValue(entry.getKey(), entry.getValue());
     }
@@ -230,11 +222,29 @@ public class RaftNode {
         });
     }
 
+    public long getCurrentTerm() {
+        return state.getCurrentTerm();
+    }
+
+    private void setCurrentTerm(long term) {
+        state.setCurrentTerm(term);
+    }
+
+    public RaftState getState() {
+        return this.state;
+    }
+
+
+    public String getVotedFor() {
+        return this.votedFor;
+    }
+
     public void shutdown() {
         scheduler.shutdown();
         workerPool.shutdown();
         storage.close();
     }
+
 }
 
 class NodeInfo {
