@@ -1,9 +1,20 @@
 package com.kvstore.raft;
 
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import java.util.concurrent.*;
 import java.util.*;
 import com.kvstore.storage.SQLiteStorage;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import com.kvstore.raft.grpc.RequestVoteRequest;
+import com.kvstore.raft.grpc.RequestVoteResponse;
+import com.kvstore.raft.grpc.RaftServiceGrpc;
+import com.kvstore.raft.grpc.AppendEntriesRequest;
+import com.kvstore.raft.grpc.AppendEntriesResponse;
+import com.kvstore.raft.grpc.LogEntry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RaftNode {
     private final String nodeId;
@@ -12,6 +23,8 @@ public class RaftNode {
     private final RaftState state;
     private final ScheduledExecutorService scheduler;
     private final ExecutorService workerPool;
+    private final ConcurrentHashMap<String, ManagedChannel> grpcChannels;
+    private static final Logger logger = LoggerFactory.getLogger(RaftNode.class);
 
     // Optimized data structures for large clusters
     private final ConcurrentHashMap<String, Long> nextIndex;
@@ -24,7 +37,7 @@ public class RaftNode {
     public RaftNode(String nodeId, List<String> peerIds, SQLiteStorage storage) {
         this.nodeId = nodeId;
         this.peers = new ConcurrentHashMap<>();
-        peerIds.forEach(id -> this.peers.put(id, new NodeInfo(id)));
+        peerIds.forEach(id -> this.peers.put(id, new NodeInfo(id, "localhost", 50051)));  // Use appropriate host and port
         this.storage = storage;
         this.state = new RaftState();
         this.scheduler = Executors.newScheduledThreadPool(2);
@@ -32,6 +45,19 @@ public class RaftNode {
         this.nextIndex = new ConcurrentHashMap<>();
         this.matchIndex = new ConcurrentHashMap<>();
         this.votedFor = null;
+        this.grpcChannels = new ConcurrentHashMap<>();
+        initializeGrpcChannels(peerIds);
+    }
+
+
+    private void initializeGrpcChannels(List<String> peerIds) {
+        for (String peerId : peerIds) {
+            NodeInfo peerInfo = peers.get(peerId);
+            ManagedChannel channel = ManagedChannelBuilder.forAddress(peerInfo.getHost(), peerInfo.getPort())
+                    .usePlaintext()
+                    .build();
+            grpcChannels.put(peerId, channel);
+        }
     }
 
     public void start() {
@@ -82,9 +108,40 @@ public class RaftNode {
     }
 
     //
-    public boolean requestVote(NodeInfo peer, long lastLogIndex, long lastLogTerm) {
-        // Implement RPC call to peer for vote request
-        return false; // Placeholder
+//    public boolean requestVote(NodeInfo peer, long lastLogIndex, long lastLogTerm) {
+//        // Implement RPC call to peer for vote request
+//        return false; // Placeholder
+//    }
+    public CompletableFuture<Boolean> requestVote(NodeInfo peer, long lastLogIndex, long lastLogTerm) {
+        return CompletableFuture.supplyAsync(() -> {
+            rwLock.readLock().lock();
+            try {
+                RequestVoteRequest request = RequestVoteRequest.newBuilder()
+                        .setTerm(state.getCurrentTerm())
+                        .setCandidateId(nodeId)
+                        .setLastLogIndex(lastLogIndex)
+                        .setLastLogTerm(lastLogTerm)
+                        .build();
+
+                RaftServiceGrpc.RaftServiceBlockingStub stub = RaftServiceGrpc.newBlockingStub(grpcChannels.get(peer.getId()));
+                RequestVoteResponse response = stub.requestVote(request);
+
+                if (response.getTerm() > state.getCurrentTerm()) {
+                    state.setCurrentTerm(response.getTerm());
+                    state.becomeFollower(response.getTerm());
+                    votedFor = null;
+                    return false;
+                }
+
+                return response.getVoteGranted();
+            } catch (Exception e) {
+                // Handle gRPC exceptions (e.g., network issues)
+                logger.error("Error during RequestVote RPC to " + peer.getId(), e);
+                return false;
+            } finally {
+                rwLock.readLock().unlock();
+            }
+        }, workerPool);
     }
 
     //Sends the log entry to followers, which replicate the log entry
@@ -198,7 +255,12 @@ public class RaftNode {
             return CompletableFuture.completedFuture(false);
         }
 
-        LogEntry entry = new LogEntry(state.getCurrentTerm(), key, value);
+        LogEntry entry = LogEntry.newBuilder()
+                .setTerm(state.getCurrentTerm())
+                .setKey(key)
+                .setValue(value)
+                .build();
+
         storage.appendLogEntry(entry);
         return replicateEntry(storage.getLastLogIndex());
     }
@@ -243,18 +305,23 @@ public class RaftNode {
         scheduler.shutdown();
         workerPool.shutdown();
         storage.close();
+        grpcChannels.values().forEach(ManagedChannel::shutdown);
     }
-
 }
 
 class NodeInfo {
     private String id;
+    private String host;
+    private int port;
 
-    public NodeInfo(String id) {
+    public NodeInfo(String id, String host, int port) {
         this.id = id;
+        this.host = host;
+        this.port = port;
     }
 
-    public String getId() {
-        return id;
-    }
+    public String getId() { return id; }
+    public String getHost() { return host; }
+    public int getPort() { return port; }
+
 }

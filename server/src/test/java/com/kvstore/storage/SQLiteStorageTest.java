@@ -1,6 +1,5 @@
 package com.kvstore.storage;
 
-import com.kvstore.raft.LogEntry;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;

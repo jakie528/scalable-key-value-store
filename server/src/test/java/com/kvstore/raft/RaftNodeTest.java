@@ -11,6 +11,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import com.kvstore.storage.SQLiteStorage;
+import com.kvstore.raft.grpc.LogEntry;
 
 public class RaftNodeTest {
     private RaftNode raftNode;
@@ -67,8 +68,10 @@ public class RaftNodeTest {
         CompletableFuture<Boolean> result = raftNode.proposeEntry("testKey", "testValue");
         assertTrue(result.get(5, TimeUnit.SECONDS));
 
-        verify(mockStorage).appendLogEntry(any(LogEntry.class));
-//        verify(mockStorage).updateKeyValue("testKey", "testValue");
+        verify(mockStorage).appendLogEntry(argThat(entry ->
+                entry.getKey().equals("testKey") &&
+                        entry.getValue().equals("testValue")
+        ));
     }
 
     @Test
@@ -76,13 +79,21 @@ public class RaftNodeTest {
         when(mockStorage.getLastLogIndex()).thenReturn(0L);
         when(mockStorage.getLogEntry(anyLong())).thenReturn(null);
 
-        LogEntry entry = new LogEntry(1, "testKey", "testValue");
+        LogEntry entry = LogEntry.newBuilder()
+                .setTerm(1)
+                .setKey("testKey")
+                .setValue("testValue")
+                .build();
+
         List<LogEntry> entries = Arrays.asList(entry);
         boolean result = raftNode.appendEntries("leader", 1, 0, 0, entries, 0);
 
         assertTrue(result);
-        verify(mockStorage).appendLogEntry(any(LogEntry.class));
-//        verify(mockStorage).updateKeyValue("testKey", "testValue");
+        verify(mockStorage).appendLogEntry(argThat(logEntry ->
+                logEntry.getTerm() == 1 &&
+                        logEntry.getKey().equals("testKey") &&
+                        logEntry.getValue().equals("testValue")
+        ));
     }
 
     // Add more tests as needed...

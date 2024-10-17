@@ -57,6 +57,13 @@
             <scope>test</scope> <!-- Optional: if only used for testing -->
         </dependency>
 
+        <!-- Add the SLF4J dependency -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.32</version>
+        </dependency>
+
 
         <!-- Testing -->
         <dependency>

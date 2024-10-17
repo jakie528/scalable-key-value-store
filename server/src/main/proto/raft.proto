@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 option java_multiple_files = true;
-option java_package = "com.kvstore.raft.grpc";
+option java_package = "com.kvstore.raft";
 option java_outer_classname = "RaftProto";
 
 package kvstore.raft;
@@ -41,4 +41,5 @@ message LogEntry {
   int64 term = 1;
   string key = 2;
   string value = 3;
+  int64 index = 4;
 }

@@ -4,7 +4,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.kvstore.raft.LogEntry;
+import com.kvstore.raft.grpc.LogEntry;
 
 public class SQLiteStorage {
     private Connection connection;
@@ -69,7 +69,11 @@ public long appendLogEntry(LogEntry entry) {
                 long term = rs.getLong("term");
                 String key = rs.getString("key");
                 String value = rs.getString("value");
-                entries.add(new LogEntry(term, key, value));
+                entries.add(LogEntry.newBuilder()
+                        .setTerm(term)
+                        .setKey(key)
+                        .setValue(value)
+                        .build());
             }
         } catch (SQLException e) {
             throw new RuntimeException("Failed to get log entries", e);
@@ -86,7 +90,11 @@ public long appendLogEntry(LogEntry entry) {
                 long term = rs.getLong("term");
                 String key = rs.getString("key");
                 String value = rs.getString("value");
-                return new LogEntry(term, key, value);
+                return LogEntry.newBuilder()
+                        .setTerm(term)
+                        .setKey(key)
+                        .setValue(value)
+                        .build();
             }
         } catch (SQLException e) {
             throw new RuntimeException("Failed to get log entry", e);
