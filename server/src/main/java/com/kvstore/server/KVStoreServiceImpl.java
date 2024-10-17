@@ -2,16 +2,15 @@ package com.kvstore.server;
 
 import com.kvstore.grpc.*;
 import com.kvstore.raft.RaftNode;
-import com.kvstore.storage.KVStorage;
+import com.kvstore.storage.SQLiteStorage;
 import io.grpc.stub.StreamObserver;
-
 import java.util.concurrent.CompletableFuture;
 
 public class KVStoreServiceImpl extends KVStoreServiceGrpc.KVStoreServiceImplBase {
-    private final KVStorage storage;
+    private final SQLiteStorage storage;
     private final RaftNode raftNode;
 
-    public KVStoreServiceImpl(KVStorage storage, RaftNode raftNode) {
+    public KVStoreServiceImpl(SQLiteStorage storage, RaftNode raftNode) {
         this.storage = storage;
         this.raftNode = raftNode;
     }
@@ -32,7 +31,6 @@ public class KVStoreServiceImpl extends KVStoreServiceGrpc.KVStoreServiceImplBas
     public void put(PutRequest request, StreamObserver<PutResponse> responseObserver) {
         String key = request.getKey();
         String value = request.getValue();
-
         CompletableFuture<Boolean> future = raftNode.proposeEntry(key, value);
         future.thenAccept(success -> {
             PutResponse response = PutResponse.newBuilder()
@@ -42,4 +40,5 @@ public class KVStoreServiceImpl extends KVStoreServiceGrpc.KVStoreServiceImplBas
             responseObserver.onCompleted();
         });
     }
+
 }
