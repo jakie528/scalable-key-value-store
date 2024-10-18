@@ -22,6 +22,8 @@ Note: Check if the gRPC classes are generated. They should be in `target/generat
 
 This should generate the necessary gRPC classes and compile the project successfully.
 
+under server directory: run `mvn package` 
+
 ` java -jar ./target/kv-store-1.0-SNAPSHOT.jar /users/wjhu/P2/server/server/config.txt` to lauch the server
 ### Unit Test 
 
