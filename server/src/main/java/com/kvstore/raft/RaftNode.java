@@ -7,12 +7,12 @@ import java.util.*;
 import com.kvstore.storage.SQLiteStorage;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.kvstore.raft.grpc.RequestVoteRequest;
-import com.kvstore.raft.grpc.RequestVoteResponse;
-import com.kvstore.raft.grpc.RaftServiceGrpc;
-import com.kvstore.raft.grpc.AppendEntriesRequest;
-import com.kvstore.raft.grpc.AppendEntriesResponse;
-import com.kvstore.raft.grpc.LogEntry;
+import com.kvstore.raft.RequestVoteRequest;
+import com.kvstore.raft.RequestVoteResponse;
+import com.kvstore.raft.RaftServiceGrpc;
+import com.kvstore.raft.AppendEntriesRequest;
+import com.kvstore.raft.AppendEntriesResponse;
+import com.kvstore.raft.LogEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

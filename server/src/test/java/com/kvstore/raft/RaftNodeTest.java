@@ -11,7 +11,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import com.kvstore.storage.SQLiteStorage;
-import com.kvstore.raft.grpc.LogEntry;
+import com.kvstore.raft.LogEntry;
+import com.kvstore.raft.LogEntry;
 
 public class RaftNodeTest {
     private RaftNode raftNode;

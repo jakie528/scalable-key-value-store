@@ -4,7 +4,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.kvstore.raft.grpc.LogEntry;
+import com.kvstore.raft.LogEntry;
 
 public class SQLiteStorage {
     private Connection connection;
