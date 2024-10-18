@@ -28,3 +28,14 @@ This should generate the necessary gRPC classes and compile the project successf
 Run the test command `mvn test` under the server directory.
 ![image](https://github.com/user-attachments/assets/0af7c83c-1cd6-4f2c-8174-472ca25b69b4)
 
+
+Client side
+
+Setup client
+`mkdir build && cd build`
+`cmake ..`
+`make -j8`
+
+Launch client
+`./client_app ../src/raft_config.txt`
+
