@@ -21,6 +21,8 @@ Run the following Maven commands:
 Note: Check if the gRPC classes are generated. They should be in `target/generated-sources/protobuf/java` and `target/generated-sources/protobuf/grpc-java`
 
 This should generate the necessary gRPC classes and compile the project successfully.
+
+` java -jar ./target/kv-store-1.0-SNAPSHOT.jar /users/wjhu/P2/server/server/config.txt` to lauch the server
 ### Unit Test 
 
 Run the test command `mvn test` under the server directory.
